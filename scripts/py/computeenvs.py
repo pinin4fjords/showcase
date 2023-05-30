@@ -10,42 +10,45 @@ class ComputeEnvs:
     Python wrapper for tw compute-envs command
     """
 
-    def __init__(self, ce_name):
-        self.name = ce_name
-        self.cmd = "compute-envs"
+    cmd = "compute-envs"
 
-    def tw(self, command):
+    def __init__(self, env_name):
+        self.name = env_name
+
+    def _tw_run(self, command):
         return tw_run(command)
 
     def list(self):
         """
         List compute environments
         """
-        return self.tw([self.cmd, "list"])
+        return self._tw_run([self.cmd, "list"])
 
     def view(self):
         """
         View a compute environment
         """
-        return self.tw([self.cmd, "view", "--name", self.name])
+        return self._tw_run([self.cmd, "view", "--name", self.name])
 
     def delete(self):
         """
         Delete a compute environment
         """
-        self.tw([self.cmd, "delete", "--name", self.name])
+        self._tw_run([self.cmd, "delete", "--name", self.name])
 
     def export_ce(self):
         """
         Export a compute environment
         """
-        return self.tw([self.cmd, "export", "--name", self.name, self.name + ".json"])
+        return self._tw_run(
+            [self.cmd, "export", "--name", self.name, self.name + ".json"]
+        )
 
     def import_ce(self, config, credentials):
         """
         Import a compute environment
         """
-        self.tw(
+        self._tw_run(
             [
                 self.cmd,
                 "import",
@@ -61,4 +64,4 @@ class ComputeEnvs:
         """
         Set a compute environment as default
         """
-        self.tw([self.cmd, "primary", "set", "--name", self.name])
+        self._tw_run([self.cmd, "primary", "set", "--name", self.name])

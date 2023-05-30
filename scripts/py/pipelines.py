@@ -9,41 +9,43 @@ class Pipelines:
     Python wrapper for tw pipelines command
     """
 
-    def __init__(self):
-        self.cmd = "pipelines"
+    cmd = "pipelines"
 
-    def tw(self, command):
+    def __init__(self):
+        pass
+
+    def _tw_run(self, command):
         return tw_run(command)
 
     def list(self):
         """
         List pipelines
         """
-        return self.tw([self.cmd, "list"])
+        return self._tw_run([self.cmd, "list"])
 
     def view(self, name):
         """
         View a pipeline
         """
-        return self.tw([self.cmd, "view", "--name", name])
+        return self._tw_run([self.cmd, "view", "--name", name])
 
     def delete(self, name):
         """
         Delete a pipeline
         """
-        self.tw([self.cmd, "delete", "--name", name])
+        self._tw_run([self.cmd, "delete", "--name", name])
 
     def export_pipeline(self, name):
         """
         Export a pipeline
         """
-        return self.tw([self.cmd, "export", "--name", name, name + ".json"])
+        return self._tw_run([self.cmd, "export", "--name", name, name + ".json"])
 
     def import_pipeline(self, name, config, credentials):
         """
         Import a pipeline
         """
-        self.tw(
+        self._tw_run(
             [self.cmd, "import", "--name", name, config, "--credentials", credentials]
         )
 
@@ -51,6 +53,8 @@ class Pipelines:
         """
         Add a pipeline to the workspace
         """
-        self.tw([self.cmd, "add", "--name", name, "--params-file", config, repository])
+        self._tw_run(
+            [self.cmd, "add", "--name", name, "--params-file", config, repository]
+        )
 
     # TODO: add labels method
