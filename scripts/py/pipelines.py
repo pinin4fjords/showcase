@@ -14,20 +14,20 @@ class Pipelines:
     def __init__(self):
         pass
 
-    def _tw_run(self, command):
-        return tw_run(command)
+    def _tw_run(self, command, to_json=False):
+        return tw_run(command, to_json)
 
     def list(self):
         """
         List pipelines
         """
-        return self._tw_run([self.cmd, "list"])
+        return self._tw_run([self.cmd, "list"], to_json=True)
 
     def view(self, name):
         """
         View a pipeline
         """
-        return self._tw_run([self.cmd, "view", "--name", name])
+        return self._tw_run([self.cmd, "view", "--name", name], to_json=True)
 
     def delete(self, name):
         """
