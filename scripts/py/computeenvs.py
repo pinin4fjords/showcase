@@ -1,5 +1,5 @@
 """
-Python wrapper for tw compute-envs command  
+Python wrapper for tw compute-envs command
 """
 
 from utils import tw_run
@@ -23,19 +23,24 @@ class ComputeEnvs:
         """
         List compute environments
         """
-        return self._tw_run([self.cmd, "list"], to_json=True)
+        return self._tw_run(
+            [self.cmd, "list", "--workspace", self.workspace], to_json=True
+        )
 
-    def view(self):
+    def view(self, name):
         """
         View a compute environment
         """
-        return self._tw_run([self.cmd, "view", "--name", self.name], to_json=True)
+        return self._tw_run(
+            [self.cmd, "view", "--name", name, "--workspace", self.workspace],
+            to_json=True,
+        )
 
-    def delete(self):
+    def delete(self, name):
         """
         Delete a compute environment
         """
-        self._tw_run([self.cmd, "delete", "--name", self.name])
+        self._tw_run([self.cmd, "delete", "--name", name])
 
     def export_ce(self, name):
         """
@@ -50,26 +55,40 @@ class ComputeEnvs:
         # define the output file path
         outfile = workspace_dir / f"{name}.json"
 
-        return self._tw_run([self.cmd, "export", "--name", name, outfile], to_json=True)
+        return self._tw_run(
+            [
+                self.cmd,
+                "export",
+                "--workspace",
+                self.workspace,
+                "--name",
+                name,
+                outfile,
+            ],
+            to_json=True,
+        )
 
-    def import_ce(self, name, config, credentials):
+    def import_ce(self, name, config, credentials, overwrite=False):
         """
         Import a compute environment
         """
-        self._tw_run(
-            [
-                self.cmd,
-                "import",
-                "--name",
-                name,
-                config,
-                "--credentials",
-                credentials,
-            ]
-        )
+        command = [
+            self.cmd,
+            "import",
+            "--name",
+            name,
+            config,
+            "--credentials",
+            credentials,
+            "--workspace",
+            self.workspace,
+        ]
+        if overwrite:
+            command.append("--overwrite")
+        self._tw_run(command)
 
-    def set_default(self):
+    def set_default(self, name):
         """
         Set a compute environment as default
         """
-        self._tw_run([self.cmd, "primary", "set", "--name", self.name])
+        self._tw_run([self.cmd, "primary", "set", "--name", name])

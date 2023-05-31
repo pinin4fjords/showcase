@@ -1,7 +1,8 @@
 """
-Python wrapper for tw pipelines command  
+Python wrapper for tw pipelines command
 """
 from utils import tw_run
+from pathlib import Path
 
 
 class Pipelines:
@@ -11,8 +12,8 @@ class Pipelines:
 
     cmd = "pipelines"
 
-    def __init__(self):
-        pass
+    def __init__(self, workspace_name):
+        self.workspace = workspace_name
 
     def _tw_run(self, command, to_json=False):
         return tw_run(command, to_json)
@@ -21,7 +22,9 @@ class Pipelines:
         """
         List pipelines
         """
-        return self._tw_run([self.cmd, "list"], to_json=True)
+        return self._tw_run(
+            [self.cmd, "list", "--workspace", self.workspace], to_json=True
+        )
 
     def view(self, name):
         """
@@ -39,14 +42,34 @@ class Pipelines:
         """
         Export a pipeline
         """
-        return self._tw_run([self.cmd, "export", "--name", name, name + ".json"])
+        # create a Path object for the workspace directory
+        workspace_dir = Path(self.workspace)
 
-    def import_pipeline(self, name, config, credentials):
+        # create the directory if it doesn't exist
+        workspace_dir.mkdir(parents=True, exist_ok=True)
+
+        # define the output file path
+        outfile = workspace_dir / f"{name}.json"
+
+        return self._tw_run(
+            [
+                self.cmd,
+                "export",
+                "--workspace",
+                self.workspace,
+                "--name",
+                name,
+                outfile,
+            ],
+            to_json=True,
+        )
+
+    def import_pipeline(self, name, config):
         """
         Import a pipeline
         """
         self._tw_run(
-            [self.cmd, "import", "--name", name, config, "--credentials", credentials]
+            [self.cmd, "import", "--name", name, config, "--workspace", self.workspace]
         )
 
     def add(self, name, config, repository):
@@ -54,7 +77,17 @@ class Pipelines:
         Add a pipeline to the workspace
         """
         self._tw_run(
-            [self.cmd, "add", "--name", name, "--params-file", config, repository]
+            [
+                self.cmd,
+                "add",
+                "--name",
+                name,
+                "--params-file",
+                config,
+                repository,
+                "--workspace",
+                self.workspace,
+            ]
         )
 
     # TODO: add labels method
