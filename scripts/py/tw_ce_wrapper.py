@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 """
-Wrapper script to automate creation of CEs and export of CEs from/to JSON files. 
+Wrapper script to automate creation of CEs and export of CEs from/to JSON files.
 """
 import argparse
 from computeenvs import ComputeEnvs as CeWrapper
@@ -9,6 +9,14 @@ import utils
 from pathlib import Path
 import sys
 import json
+import logging
+
+logger = logging.getLogger(__name__)
+
+
+def log_and_continue(e):
+    logger.error(e)
+    return
 
 
 def parse_args(args=None):
@@ -23,6 +31,14 @@ def parse_args(args=None):
     parser.add_argument(
         "--import", action="store_true", help="Import CEs from JSON", dest="import_arg"
     )
+    parser.add_argument(
+        "-l",
+        "--log_level",
+        default="INFO",
+        choices=("CRITICAL", "ERROR", "WARNING", "INFO", "DEBUG"),
+        help="The desired log level (default: WARNING).",
+    )
+
     args = parser.parse_args()
     return args
 
@@ -37,80 +53,87 @@ def get_compute_envs(ce_list):
     return names
 
 
-def get_json_files(json_files):
-    """
-    Convert a list of PosixPath objects for the provided JSON files
-    into a comma-separated list of strings and parse the name of JSONs out
-    to use as the name for the CE being created.
+def validate_input_files(json_files):
+    # Check if JSON input files exist
+    for filepath in json_files:
+        if not Path(filepath).is_file():
+            raise ValueError(f"JSON file {filepath} provided does not exist!")
 
-    If a single path is provided, return the string representation of the path..
-    Returns both lists in a tuple.
-    """
-    if not isinstance(json_files, list):
-        json_files = [json_files]
 
-    json_str = [str(json_in) for json_in in json_files]
-    basenames = [Path(x).stem for x in json_files]
+def handle_export(tw_ce):
+    # Export compute environments to JSON files
+    compute_env_names = get_compute_envs(tw_ce.list())
+    for name in compute_env_names:
+        # Export all CEs in workspace by name
+        tw_ce.export_ce(name)
+        logger.info(f"Successfully exported CE {name}")
 
-    return json_str, basenames
+
+def handle_import(tw_ce, json_files, credentials):
+    # Import compute environments from JSON files
+    # TODO: add argument to supply a prefix/name
+
+    # Get JSON file list and their basenames to name the CEs
+    json_in, json_names = utils.get_json_files(json_files)
+    for config, ce_name in zip(json_in, json_names):
+        try:
+            # Check if CE already exists
+            utils.check_if_exists(tw_ce.list(), ce_name)
+
+            # Import the CE into Tower workspace
+            # TODO: overwrite option?
+            tw_ce.import_ce(ce_name, config, credentials)
+
+            # Check if CE resource was created by its name
+            utils.validate_id(tw_ce.list(), ce_name)
+        except ValueError as e:
+            log_and_continue(e)
+        else:
+            logger.info(f"Successfully imported CE {ce_name}")
 
 
 def main(args=None):
-    args = parse_args(args)
+    args = parse_args()
+    logging.basicConfig(level=args.log_level)
 
     # Check environment variables first
     try:
         utils.tw_env_var("TOWER_ACCESS_KEY")
     except EnvironmentError as e:
-        print(e)
-        sys.exit(1)
+        logger.error(e)
 
     # If workspace is not provided, check if env var is set
     if not args.workspace:
         try:
             utils.tw_env_var("TOWER_WORKSPACE_ID")
         except EnvironmentError as e:
-            print(e)
-            print("Please set or provide a workspace name with --workspace.")
+            logger.error(e)
+            logger.error("Please set or provide a workspace name with --workspace.")
             sys.exit(1)
         else:
             args.workspace = utils.tw_env_var("TOWER_WORKSPACE_ID")
 
     # Create instance of CE Wrapper
-    cli = CeWrapper(args.workspace)
+    tw_ce = CeWrapper(args.workspace)
 
     if args.export:
-        # Export compute environments to JSON files
-        compute_env_names = get_compute_envs(cli.list())
-
-        for name in compute_env_names:
-            cli.export_ce(name)
+        handle_export(tw_ce)
 
     elif args.import_arg:
         # Import compute environments from JSON files
         try:
             utils.validate_credentials(args.credentials, args.workspace)
+            validate_input_files(args.json_files)
         except ValueError as e:
-            print(e)
-            sys.exit(1)
+            logger.exception(e)
 
-        # Check if the json_files provided exist
-        for filepath in args.json_files:
-            if not Path(filepath).is_file():
-                print(f"JSON file {filepath} provided does not exist!")
-                sys.exit(1)
-
-        # Get JSON file list and their basenames to name the CEs
-        json_in, json_names = get_json_files(args.json_files)
-        for config, ce_name in zip(json_in, json_names):
-            print(config, ce_name)
-            cli.import_ce(ce_name, config, args.credentials)
+        handle_import(tw_ce, args.json_files, args.credentials)
 
     else:
         # If neither --import or --export is provided, exit
-        print("Please provide either the --import or --export option")
+        logger.error("Please provide either the --import or --export option")
         sys.exit(1)
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())
