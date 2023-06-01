@@ -90,4 +90,18 @@ class Pipelines:
             ]
         )
 
+    def launch(self, name, config=None):
+        """
+        Launch a pipeline
+        """
+        command = [
+            "launch",
+            name,
+            "--workspace",
+            self.workspace,
+        ]
+        if config:
+            return command + " --params-file " + config
+        return self._tw_run(command)
+
     # TODO: add labels method

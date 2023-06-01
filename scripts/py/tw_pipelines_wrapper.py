@@ -58,6 +58,11 @@ def parse_args():
         choices=("CRITICAL", "ERROR", "WARNING", "INFO", "DEBUG"),
         help="The desired log level (default: WARNING).",
     )
+    parser.add_argument(
+        "--launch",
+        action="store_true",
+        help="Launch pipeline after using import or add_new, or launch an existing pipeline",
+    )
 
     return parser.parse_args()
 
@@ -105,6 +110,7 @@ def handle_import(tw_pipelines, json_files):
             log_and_continue(e)
         else:
             logger.info(f"Pipeline '{pipeline_name}' imported successfully.")
+    return pipeline_name
 
 
 def handle_add(tw_pipelines, pipeline_name, params_file, repository):
@@ -114,6 +120,22 @@ def handle_add(tw_pipelines, pipeline_name, params_file, repository):
         logger.error(f"{e}")
     else:
         tw_pipelines.add(pipeline_name, params_file, repository)
+
+
+def handle_launch(tw_pipelines, pipeline_name, workspace, config=None):
+    """Launch a pipeline that either already exists in launchpad
+    or was just imported or added via the wrapper. Can be appended
+     at the end of a command using this wrapper.
+    """
+    try:
+        utils.validate_id(tw_pipelines.list(), pipeline_name)
+    except ValueError as e:
+        log_and_continue(e)
+    else:
+        if config is not None:
+            tw_pipelines.launch(pipeline_name, config)
+        else:
+            tw_pipelines.launch(pipeline_name)
 
 
 def main():
@@ -141,10 +163,21 @@ def main():
 
     if args.export:
         handle_export(tw_pipelines, tw_pipelines.list())
+
+    # Return pipeline name
     if args.import_arg and args.json_files:
-        handle_import(tw_pipelines, args.json_files)
+        args.pipeline_name = handle_import(tw_pipelines, args.json_files)
+
+    # Handle adding new pipelines
     if args.add_new and args.repository and args.pipeline_name:
         handle_add(tw_pipelines, args.pipeline_name, args.params_file, args.repository)
+
+    # If --launch is specified
+    if args.launch and args.pipeline_name:
+        logger.info(f"Launching pipeline {args.pipeline_name}")
+        handle_launch(
+            tw_pipelines, args.pipeline_name, args.workspace, args.params_file
+        )
 
     # TODO: add update method
     # TODO: error handling for argument parsing
