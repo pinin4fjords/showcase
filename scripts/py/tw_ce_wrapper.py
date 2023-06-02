@@ -38,9 +38,13 @@ def parse_args(args=None):
         choices=("CRITICAL", "ERROR", "WARNING", "INFO", "DEBUG"),
         help="The desired log level (default: WARNING).",
     )
+    parser.add_argument(
+        "additional_args",
+        nargs=argparse.REMAINDER,
+        help="Additional TW command-line arguments",
+    )
 
-    args = parser.parse_args()
-    return args
+    return parser.parse_args()
 
 
 def get_compute_envs(ce_list):
@@ -60,16 +64,16 @@ def validate_input_files(json_files):
             raise ValueError(f"JSON file {filepath} provided does not exist!")
 
 
-def handle_export(tw_ce):
+def handle_export(tw_ce, *additional_args):
     # Export compute environments to JSON files
     compute_env_names = get_compute_envs(tw_ce.list())
     for name in compute_env_names:
         # Export all CEs in workspace by name
-        tw_ce.export_ce(name)
+        tw_ce.export_ce(name, *additional_args)
         logger.info(f"Successfully exported CE {name}")
 
 
-def handle_import(tw_ce, json_files, credentials):
+def handle_import(tw_ce, json_files, credentials, *additional_args):
     # Import compute environments from JSON files
     # TODO: add argument to supply a prefix/name
 
@@ -82,7 +86,7 @@ def handle_import(tw_ce, json_files, credentials):
 
             # Import the CE into Tower workspace
             # TODO: overwrite option?
-            tw_ce.import_ce(ce_name, config, credentials)
+            tw_ce.import_ce(ce_name, config, credentials, *additional_args)
 
             # Check if CE resource was created by its name
             utils.validate_id(tw_ce.list(), ce_name)
@@ -93,7 +97,7 @@ def handle_import(tw_ce, json_files, credentials):
 
 
 def main(args=None):
-    args = parse_args()
+    args, unknown_args = parse_args()  # Unpack the tuple into args and unknown_args
     logging.basicConfig(level=args.log_level)
 
     # Check environment variables first
@@ -117,7 +121,7 @@ def main(args=None):
     tw_ce = CeWrapper(args.workspace)
 
     if args.export:
-        handle_export(tw_ce)
+        handle_export(tw_ce, *tuple(args.additional_args))
 
     elif args.import_arg:
         # Import compute environments from JSON files
@@ -127,7 +131,9 @@ def main(args=None):
         except ValueError as e:
             logger.exception(e)
 
-        handle_import(tw_ce, args.json_files, args.credentials)
+        handle_import(
+            tw_ce, args.json_files, args.credentials, *tuple(args.additional_args)
+        )
 
     else:
         # If neither --import or --export is provided, exit

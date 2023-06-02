@@ -16,33 +16,37 @@ class ComputeEnvs:
     def __init__(self, workspace_name):
         self.workspace = workspace_name
 
-    def _tw_run(self, command, to_json=False):
-        return tw_run(command, to_json)
+    def _tw_run(self, command, *args, **kwargs):
+        return tw_run(command, *args, **kwargs)
 
-    def list(self):
+    def list(self, *args, **kwargs):
         """
         List compute environments
         """
         return self._tw_run(
-            [self.cmd, "list", "--workspace", self.workspace], to_json=True
+            [self.cmd, "list", "--workspace", self.workspace],
+            *args,
+            **kwargs,
         )
 
-    def view(self, name):
+    def view(self, name, *args, **kwargs):
         """
         View a compute environment
         """
         return self._tw_run(
             [self.cmd, "view", "--name", name, "--workspace", self.workspace],
             to_json=True,
+            *args,
+            **kwargs,
         )
 
-    def delete(self, name):
+    def delete(self, name, *args):
         """
         Delete a compute environment
         """
-        self._tw_run([self.cmd, "delete", "--name", name])
+        self._tw_run([self.cmd, "delete", "--name", name], *args)
 
-    def export_ce(self, name):
+    def export_ce(self, name, *args, **kwargs):
         """
         Export a compute environment
         """
@@ -66,9 +70,11 @@ class ComputeEnvs:
                 outfile,
             ],
             to_json=True,
+            *args,
+            **kwargs,
         )
 
-    def import_ce(self, name, config, credentials, overwrite=False):
+    def import_ce(self, name, config, credentials, *args, **kwargs):
         """
         Import a compute environment
         """
@@ -83,12 +89,10 @@ class ComputeEnvs:
             "--workspace",
             self.workspace,
         ]
-        if overwrite:
-            command.append("--overwrite")
-        self._tw_run(command)
+        self._tw_run(command, *args, **kwargs)
 
-    def set_default(self, name):
+    def set_default(self, name, *args):
         """
         Set a compute environment as default
         """
-        self._tw_run([self.cmd, "primary", "set", "--name", name])
+        self._tw_run([self.cmd, "primary", "set", "--name", name], *args)
