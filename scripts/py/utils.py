@@ -5,19 +5,19 @@ from pathlib import Path
 import yaml
 
 
-def tw_run(cmd, to_json=False):
+def tw_run(cmd, *args, **kwargs):
     """
     Run a tw command with supplied commands
     """
-    if to_json:
-        cmd = ["tw", "-o", "json"] + cmd
-    else:
-        cmd = ["tw"] + cmd
-    process = subprocess.run(cmd, stdout=subprocess.PIPE, text=True)
-    output_lines = process.stdout
-    # # Print and return the captured output line by line
-    print(output_lines)
-    return output_lines
+    full_cmd = ["tw"]
+    if kwargs.get("to_json"):
+        full_cmd.extend(["-o", "json"])
+    full_cmd.extend(cmd)
+    full_cmd.extend(args)
+    # Run the command and return the stdout
+    process = subprocess.run(full_cmd, stdout=subprocess.PIPE)
+    stdout = process.stdout.decode("utf-8")
+    return stdout
 
 
 def tw_env_var(tw_variable):
