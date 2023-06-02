@@ -63,8 +63,13 @@ def parse_args():
         action="store_true",
         help="Launch pipeline after using import or add_new, or launch an existing pipeline",
     )
+    parser.add_argument(
+        "additional_args",
+        nargs=argparse.REMAINDER,
+        help="Additional TW command-line arguments",
+    )
 
-    return parser.parse_args()
+    return parser.parse_known_args()
 
 
 def get_pipelines(pipeline_list):
@@ -91,20 +96,20 @@ def validate_params_file(file_path):
         )
 
 
-def handle_export(tw_pipelines, pipeline_list):
+def handle_export(tw_pipelines, pipeline_list, *additional_args):
     pipeline_names = get_pipelines(pipeline_list)
     for pipeline in pipeline_names:
-        tw_pipelines.export_pipeline(pipeline)
+        tw_pipelines.export_pipeline(pipeline, *additional_args)
 
 
-def handle_import(tw_pipelines, json_files):
+def handle_import(tw_pipelines, json_files, *additional_args):
     json_in, json_names = utils.get_json_files(json_files)
     for config, pipeline_name in zip(json_in, json_names):
         try:
             # Check if pipeline already exists
             utils.check_if_exists(tw_pipelines.list(), pipeline_name)
             # TODO: override option?
-            tw_pipelines.import_pipeline(pipeline_name, config)
+            tw_pipelines.import_pipeline(pipeline_name, config, *additional_args)
             utils.validate_id(tw_pipelines.list(), pipeline_name)
         except ValueError as e:
             log_and_continue(e)
@@ -113,16 +118,16 @@ def handle_import(tw_pipelines, json_files):
     return pipeline_name
 
 
-def handle_add(tw_pipelines, pipeline_name, params_file, repository):
+def handle_add(tw_pipelines, pipeline_name, params_file, repository, *additional_args):
     try:
         validate_params_file(params_file)
     except ValueError as e:
         logger.error(f"{e}")
     else:
-        tw_pipelines.add(pipeline_name, params_file, repository)
+        tw_pipelines.add(pipeline_name, params_file, repository, *additional_args)
 
 
-def handle_launch(tw_pipelines, pipeline_name, workspace, config=None):
+def handle_launch(tw_pipelines, pipeline_name, config=None, *additional_args):
     """Launch a pipeline that either already exists in launchpad
     or was just imported or added via the wrapper. Can be appended
      at the end of a command using this wrapper.
@@ -133,13 +138,13 @@ def handle_launch(tw_pipelines, pipeline_name, workspace, config=None):
         log_and_continue(e)
     else:
         if config is not None:
-            tw_pipelines.launch(pipeline_name, config)
+            tw_pipelines.launch(pipeline_name, config, *additional_args)
         else:
-            tw_pipelines.launch(pipeline_name)
+            tw_pipelines.launch(pipeline_name, *additional_args)
 
 
 def main():
-    args = parse_args()
+    args, unknown_args = parse_args()  # Unpack the tuple into args and unknown_args
     logging.basicConfig(level=args.log_level)
 
     # Check environment variables first
@@ -161,22 +166,37 @@ def main():
     # Create instance of CE Wrapper
     tw_pipelines = PipelineWrapper(args.workspace)
 
+    # Handle export of pipeline configurations
     if args.export:
-        handle_export(tw_pipelines, tw_pipelines.list())
+        handle_export(
+            tw_pipelines, tw_pipelines.list(to_json=True), *tuple(args.additional_args)
+        )
 
     # Return pipeline name
     if args.import_arg and args.json_files:
-        args.pipeline_name = handle_import(tw_pipelines, args.json_files)
+        args.pipeline_name = handle_import(
+            tw_pipelines, args.json_files, *tuple(args.additional_args)
+        )
 
     # Handle adding new pipelines
     if args.add_new and args.repository and args.pipeline_name:
-        handle_add(tw_pipelines, args.pipeline_name, args.params_file, args.repository)
+        handle_add(
+            tw_pipelines,
+            args.pipeline_name,
+            args.params_file,
+            args.repository,
+            *tuple(args.additional_args),
+        )
 
     # If --launch is specified
     if args.launch and args.pipeline_name:
         logger.info(f"Launching pipeline {args.pipeline_name}")
         handle_launch(
-            tw_pipelines, args.pipeline_name, args.workspace, args.params_file
+            tw_pipelines,
+            args.pipeline_name,
+            args.workspace,
+            args.params_file,
+            *tuple(args.additional_args),
         )
 
     # TODO: add update method
