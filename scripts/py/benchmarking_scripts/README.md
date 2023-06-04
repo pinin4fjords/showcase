@@ -11,7 +11,8 @@ TODO
 In this config, specify what
  - Workspace
  - Compute-env
- - Pipelines and their revisions you want to run for your - - Specify a base cloud storage URI with `outdir_base` that will be used to output results of the pipelines to. Results will be stored as: `{outdir_base}/{pipeline_name}/profile_{}/{date}`
+ - Pipelines and their revisions you want to run for your
+ - Specify a base cloud storage URI with `outdir_base` that will be used to output results of the pipelines to. Results will be stored as: `{outdir_base}/{pipeline_name}/profile_{profile}/{date}`
  - Specify configuration options in `config_file`
 
 There are default examples provided in this repo that can be edited or just used out of the box.
