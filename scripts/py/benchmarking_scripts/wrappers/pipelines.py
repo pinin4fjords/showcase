@@ -1,7 +1,7 @@
 """
 Python wrapper for tw pipelines command
 """
-from utils import tw_run
+from .utils import tw_run
 from pathlib import Path
 
 
@@ -90,7 +90,7 @@ class Pipelines:
             **kwargs,
         )
 
-    def launch(self, name, config=None, *args, **kwargs):
+    def launch(self, name, *args, **kwargs):
         """
         Launch a pipeline
         """
@@ -100,8 +100,6 @@ class Pipelines:
             "--workspace",
             self.workspace,
         ]
-        if config:
-            command += ["--params-file", config]
         return self._tw_run(command, *args, **kwargs)
 
     # TODO: add labels method

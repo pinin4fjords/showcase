@@ -198,7 +198,15 @@ def main():
             args.params_file,
             *tuple(args.additional_args),
         )
-
+    # Generic launch handler
+    elif args.launch and args.repository:
+        logger.info(f"Launching pipeline from {args.repository}")
+        handle_launch(
+            tw_pipelines,
+            args.repository,
+            args.workspace,
+            *tuple(args.additional_args),
+        )
     # TODO: add update method
     # TODO: error handling for argument parsing
 

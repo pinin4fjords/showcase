@@ -1,7 +1,7 @@
 """
-Python wrapper for tw datasets command  
+Python wrapper for tw datasets command
 """
-from utils import tw_run
+from .utils import tw_run
 
 
 class Datasets:

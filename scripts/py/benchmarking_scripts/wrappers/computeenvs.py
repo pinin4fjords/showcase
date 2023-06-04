@@ -2,7 +2,7 @@
 Python wrapper for tw compute-envs command
 """
 
-from utils import tw_run
+from .utils import tw_run
 from pathlib import Path
 
 

@@ -7,7 +7,7 @@ OUTDIR=../compute-envs
 OVERWRITE=false
 
 ## Make output directory if it doesn't exist
-if [ ! -d $OUTDIR ] 
+if [ ! -d $OUTDIR ]
 then
     mkdir -p $OUTDIR
 fi

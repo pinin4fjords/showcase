@@ -3,20 +3,35 @@ import os
 import json
 from pathlib import Path
 import yaml
+import shlex
+from datetime import date
 
 
 def tw_run(cmd, *args, **kwargs):
     """
     Run a tw command with supplied commands
     """
-    full_cmd = ["tw"]
+    command = ["tw"]
     if kwargs.get("to_json"):
-        full_cmd.extend(["-o", "json"])
-    full_cmd.extend(cmd)
-    full_cmd.extend(args)
+        command.extend(["-o", "json"])
+    command.extend(cmd)
+    command.extend(args)
+
+    if "config" in kwargs:
+        config_path = kwargs["config"]
+        command.append(f"--config={config_path}")
+
+    if "params_file" in kwargs:
+        params_path = kwargs["params_file"]
+        command.append(f"--params-file={params_path}")
+
+    full_cmd = " ".join(shlex.quote(arg) for arg in command)
+
     # Run the command and return the stdout
-    process = subprocess.run(full_cmd, stdout=subprocess.PIPE)
-    stdout = process.stdout.decode("utf-8")
+    process = subprocess.Popen(full_cmd, stdout=subprocess.PIPE, shell=True)
+    stdout, _ = process.communicate()
+    stdout = stdout.decode("utf-8").strip()
+
     return stdout
 
 
@@ -124,3 +139,9 @@ def is_valid_yaml(file_path):
         return True
     except yaml.YAMLError:
         return False
+
+
+def get_date():
+    current_date = date.today()
+    formatted_date = current_date.strftime("%Y_%m_%d")
+    return formatted_date
