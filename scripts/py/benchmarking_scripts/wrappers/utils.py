@@ -5,6 +5,7 @@ from pathlib import Path
 import yaml
 import shlex
 from datetime import date
+import tempfile
 
 
 def tw_run(cmd, *args, **kwargs):
@@ -17,7 +18,7 @@ def tw_run(cmd, *args, **kwargs):
     command.extend(cmd)
     command.extend(args)
 
-    if "config" in kwargs:
+    if kwargs.get("config") is not None:
         config_path = kwargs["config"]
         command.append(f"--config={config_path}")
 
@@ -118,12 +119,19 @@ def validate_id(json_data, name):
 
 
 def check_if_exists(json_data, name):
+    """
+    Wrapper around find_key_value_in_dict() to validate that a resource was
+    created successfully in Tower by looking for the name.
+    """
     data = json.loads(json_data)
     if find_key_value_in_dict(data, "name", name):
         raise ValueError(f"Resource '{name}' already exists in Tower.")
 
 
 def is_valid_json(file_path):
+    """
+    Check if a file is valid JSON
+    """
     try:
         with open(file_path, "r") as f:
             json.load(f)
@@ -133,6 +141,9 @@ def is_valid_json(file_path):
 
 
 def is_valid_yaml(file_path):
+    """
+    Check if a file is valid YAML
+    """
     try:
         with open(file_path, "r") as f:
             yaml.safe_load(f)
@@ -142,6 +153,74 @@ def is_valid_yaml(file_path):
 
 
 def get_date():
+    """
+    Get the current date in YYYY_MM_DD format
+    """
     current_date = date.today()
     formatted_date = current_date.strftime("%Y_%m_%d")
     return formatted_date
+
+
+def get_pipeline_params(pipeline_data, pipeline_name):
+    """
+    Create a temporary params.yaml file containing `parameters`
+    defined in the yaml file used to launch pipelines.
+    """
+
+    # Define a new class to register a new YAML representer to put single
+    # quotes around the string values
+    class quoted_str(str):
+        pass
+
+    def quoted_str_representer(dumper, data):
+        return dumper.represent_scalar("tag:yaml.org,2002:str", data, style="'")
+
+    yaml.add_representer(quoted_str, quoted_str_representer)
+
+    for pipeline in pipeline_data:
+        if pipeline["name"] == pipeline_name:
+            pipeline_parameters = {
+                k: quoted_str(v) if k == "outdir" and isinstance(v, str) else v
+                for k, v in pipeline["parameters"].items()
+            }
+
+    # Create a temporary file to write the modified data
+    with tempfile.NamedTemporaryFile(mode="w", delete=False) as temp_file:
+        params_yaml = temp_file.name
+
+        # Write the modified data to the temporary file
+        with open(params_yaml, "w") as file:
+            yaml.dump(pipeline_parameters, file)
+    return params_yaml
+
+
+def parse_yaml_file(file_path):
+    with open(file_path, "r") as file:
+        data = yaml.safe_load(file)
+
+    pipeline_data = []
+    for pipeline in data["pipelines"]:
+        pipeline_dict = {
+            "name": pipeline.get("name", None),
+            "url": pipeline["url"],
+            "revision": pipeline["revision"],
+            "profiles": pipeline["profiles"],
+            "parameters": pipeline["parameters"],
+            "config": pipeline.get(
+                "config", None
+            ),  # Not all pipelines might have a config
+        }
+        pipeline_data.append(pipeline_dict)
+
+    return pipeline_data
+
+
+def get_pipeline_repo(pipeline_repo):
+    """
+    Provide full nf-core github URL if
+    only the repo name is provided
+    """
+    if "nf-core" in pipeline_repo.lower():
+        return "https://github.com/" + pipeline_repo
+    else:
+        return pipeline_repo
