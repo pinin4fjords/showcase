@@ -2,7 +2,7 @@
 
 With Data Explorer, you can browse and interact with remote data repositories from organization workspaces in Seqera Platform. It supports AWS S3, Azure Blob Storage, and Google Cloud Storage repositories.
 
-## 1. View pipeline outputs in Data Explorer
+## View pipeline outputs in Data Explorer
 
 In Data Explorer, you are able to:
 
@@ -23,7 +23,7 @@ In Data Explorer, you are able to:
 
 ![Preview pipeline results](assets/data-explorer-preview-files.gif)
 
-## 2. Configure a bucket to browser in Data Explorer
+## Configure a bucket to browser in Data Explorer
 Data Explorer also enables you to add public cloud storage buckets to view and use data from resources such as:
 
 -  [The Cancer Genome Atlas (TCGA)](https://registry.opendata.aws/tcga/)
